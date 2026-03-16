@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables — never commit secrets
+.env
+.env.*
+!.env.example
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+
+# Editor configs
+.vscode/
+.idea/

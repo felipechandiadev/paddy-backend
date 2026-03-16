@@ -1,0 +1,41 @@
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
+import { TransformInterceptor } from './shared/interceptors/transform.interceptor';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  // Habilitar CORS
+  app.enableCors({
+    origin: [process.env.FRONTEND_URL || 'http://localhost:3001'],
+    credentials: true,
+  });
+
+  // Global prefix
+  app.setGlobalPrefix('api/v1');
+
+  // Validación global
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  // Filtros globales
+  app.useGlobalFilters(new HttpExceptionFilter());
+
+  // Interceptores globales
+  app.useGlobalInterceptors(new TransformInterceptor());
+
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+
+  console.log(`🚀 Paddy Backend running on http://localhost:${port}`);
+  console.log(`📚 API Documentation available at http://localhost:${port}/api/v1`);
+}
+
+bootstrap();
