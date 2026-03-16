@@ -14,6 +14,7 @@ import { ConfigurationModule } from './modules/configuration/configuration.modul
 import { OperationsModule } from './modules/operations/operations.module';
 import { FinancesModule } from './modules/finances/finances.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { HealthModule } from './modules/health/health.module';
 
 // Importar entidades
 import { User } from './modules/users/domain/user.entity';
@@ -92,6 +93,7 @@ const databaseSslConfig = isDatabaseSslEnabled
     OperationsModule,
     FinancesModule,
     AnalyticsModule,
+    HealthModule,
   ],
   providers: [],
 })
