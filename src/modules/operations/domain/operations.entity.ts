@@ -294,6 +294,9 @@ export class AnalysisRecord extends BaseEntity {
   totalGroupPercent?: number;
 
   @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
+  groupPercent?: number;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
   groupTolerance?: number;
 
   @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })

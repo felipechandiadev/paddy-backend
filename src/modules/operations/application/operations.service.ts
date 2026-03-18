@@ -1112,6 +1112,22 @@ export class OperationsService {
       parseNumber(source.summaryPercent ?? source.totalGroupPercent) ??
       summaryPercentCalculated;
 
+    const groupPercentCalculated = roundTo2(
+      sumNumbers([
+        humedadIsGroup ? humedadPercent : undefined,
+        impurezasIsGroup ? impurezasPercent : undefined,
+        verdesIsGroup ? verdesPercent : undefined,
+        vanoIsGroup ? vanoPercent : undefined,
+        hualcachoIsGroup ? hualcachoPercent : undefined,
+        manchadosIsGroup ? manchadosPercent : undefined,
+        peladosIsGroup ? peladosPercent : undefined,
+        yesososIsGroup ? yesososPercent : undefined,
+      ]),
+    );
+
+    const groupPercent =
+      parseNumber(source.groupPercent) ?? groupPercentCalculated;
+
     const summaryToleranceCalculated = roundTo2(
       sumNumbers([
         humedadTolerance,
@@ -1249,6 +1265,7 @@ export class OperationsService {
       vanoRange: vanoValue,
       hualcachoRange: hualcachoValue,
       totalGroupPercent: summaryPercent,
+      groupPercent,
       groupTolerance: groupToleranceValue,
       dryPercent: parseNumber(source.dryPercent),
     };

@@ -319,6 +319,10 @@ class AnalysisRecordSnapshotFieldsDto {
 
   @IsOptional()
   @IsNumber()
+  groupPercent?: number;
+
+  @IsOptional()
+  @IsNumber()
   groupTolerance?: number;
 
   @IsOptional()
