@@ -540,7 +540,8 @@ export class FinancesService {
     }
 
     const diffInMs = effectiveEndDate.getTime() - issueDate.getTime();
-    return Math.max(0, Math.floor(diffInMs / (1000 * 60 * 60 * 24)));
+      // El día de emisión cuenta como día 1
+      return Math.max(1, Math.floor(diffInMs / (1000 * 60 * 60 * 24)) + 1);
   }
 
   private normalizeEntityIds(rawIds?: number[]): number[] {

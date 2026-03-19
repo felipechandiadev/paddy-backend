@@ -6,6 +6,7 @@ dotenv.config();
 
 // Importar todas las entidades
 import { User } from '@modules/users/domain/user.entity';
+import { UserPermissionOverride } from '@modules/users/domain/user-permission-override.entity';
 import { Producer } from '@modules/producers/domain/producer.entity';
 import {
   RiceType,
@@ -65,6 +66,7 @@ export const dataSource = new DataSource({
     Transaction,
     Settlement,
     SettlementReceptionSnapshot,
+    UserPermissionOverride,
   ],
   migrations: [`${__dirname}/../persistence/migrations/**/*{.ts,.js}`],
   migrationsRun: process.env.NODE_ENV === 'production',

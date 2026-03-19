@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import * as dotenv from 'dotenv';
@@ -15,9 +15,12 @@ import { OperationsModule } from './modules/operations/operations.module';
 import { FinancesModule } from './modules/finances/finances.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { HealthModule } from './modules/health/health.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { CorrelationIdMiddleware } from './shared/middleware/correlation-id.middleware';
 
 // Importar entidades
 import { User } from './modules/users/domain/user.entity';
+import { UserPermissionOverride } from './modules/users/domain/user-permission-override.entity';
 import { Producer } from './modules/producers/domain/producer.entity';
 import {
   RiceType,
@@ -35,6 +38,7 @@ import {
   Settlement,
   SettlementReceptionSnapshot,
 } from './modules/finances/domain/finances.entity';
+import { AuditEvent } from './modules/audit/domain/audit-event.entity';
 
 const isDatabaseSslRequired =
   process.env.DATABASE_SSL_MODE?.toUpperCase() === 'REQUIRED';
@@ -79,6 +83,8 @@ const databaseSslConfig = isDatabaseSslEnabled
         Transaction,
         Settlement,
         SettlementReceptionSnapshot,
+        UserPermissionOverride,
+        AuditEvent,
       ],
       synchronize:
         process.env.TYPEORM_SYNCHRONIZE === 'true' &&
@@ -94,7 +100,14 @@ const databaseSslConfig = isDatabaseSslEnabled
     FinancesModule,
     AnalyticsModule,
     HealthModule,
+    AuditModule,
   ],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(CorrelationIdMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}

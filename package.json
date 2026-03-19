@@ -26,6 +26,7 @@
     "db:backfill:settlement-reception-snapshots": "ts-node -r tsconfig-paths/register backfill-settlement-reception-snapshots.ts",
     "db:seed": "node dist/infrastructure/persistence/seeders/seed-minimal.js",
     "db:seed:full": "node dist/infrastructure/persistence/seeders/seed.js",
+    "seed:expanded": "ts-node -r tsconfig-paths/register src/infrastructure/persistence/seeders/seed-expanded.ts",
     "db:reset": "ts-node db-reset.ts",
     "db:setup": "npm run db:reset && npm run build && npm run db:seed",
     "db:setup:full": "npm run db:reset && npm run build && npm run db:seed:full"
@@ -49,7 +50,8 @@
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.17"
+    "typeorm": "^0.3.17",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.2",
@@ -60,6 +62,7 @@
     "@types/jest": "^29.5.11",
     "@types/node": "^20.10.6",
     "@types/passport-jwt": "^3.0.13",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
     "eslint": "^8.56.0",

@@ -12,9 +12,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import { UsersService } from '../application/users.service';
+import { PermissionsService } from '../application/permissions.service';
 import { JwtAuthGuard } from '@shared/guards/jwt-auth.guard';
 import { RolesGuard } from '@shared/guards/roles.guard';
 import { Roles } from '@shared/decorators/roles.decorator';
+import { GetUser } from '@shared/decorators/get-user.decorator';
 import { RoleEnum } from '@shared/enums';
 
 /**
@@ -28,7 +30,10 @@ import { RoleEnum } from '@shared/enums';
 export class UsersController {
   private logger = new Logger('UsersController');
 
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private permissionsService: PermissionsService,
+  ) {}
 
   @Get()
   async getAllUsers(@Query('search') search?: string) {
@@ -80,5 +85,51 @@ export class UsersController {
   async toggleUserActive(@Param('id') id: number) {
     this.logger.log(`Toggling active status for user: ${id}`);
     return this.usersService.toggleUserActive(id);
+  }
+
+  /**
+   * Devuelve los permisos efectivos de un usuario
+   * GET /users/:id/permissions
+   */
+  @Get(':id/permissions')
+  async getUserPermissions(
+    @Param('id') id: number,
+  ) {
+    this.logger.log(`Fetching permissions for user: ${id}`);
+    const user = await this.usersService.getUserById(id);
+    if (!user) return { effective: [], overrides: [] };
+
+    const [effective, overrides] = await Promise.all([
+      this.permissionsService.getEffectivePermissions(id, user.role as RoleEnum),
+      this.permissionsService.getUserOverrides(id),
+    ]);
+
+    return {
+      effective,
+      overrides: overrides.map((o) => ({
+        permissionKey: o.permissionKey,
+        effect: o.effect,
+      })),
+    };
+  }
+
+  /**
+   * Reemplaza los overrides de permisos de un usuario
+   * PUT /users/:id/permissions
+   */
+  @Put(':id/permissions')
+  async setUserPermissions(
+    @Param('id') id: number,
+    @Body() body: { grants: string[]; revokes: string[] },
+    @GetUser() currentUser: { userId: number },
+  ) {
+    this.logger.log(`Setting permissions for user: ${id}`);
+    await this.permissionsService.setUserOverrides(
+      id,
+      body.grants ?? [],
+      body.revokes ?? [],
+      currentUser.userId,
+    );
+    return { message: 'Permisos actualizados' };
   }
 }

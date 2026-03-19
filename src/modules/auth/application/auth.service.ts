@@ -9,12 +9,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User } from '@modules/users/domain/user.entity';
+import { PermissionsService } from '@modules/users/application/permissions.service';
+import { RoleEnum } from '@shared/enums';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User) private usersRepository: Repository<User>,
     private jwtService: JwtService,
+    private permissionsService: PermissionsService,
   ) {}
 
   /**
@@ -84,12 +87,18 @@ export class AuthService {
     user.lastLogin = new Date();
     await this.usersRepository.save(user);
 
+    const permissions = await this.permissionsService.getEffectivePermissions(
+      user.id,
+      user.role as RoleEnum,
+    );
+
     return {
       access_token: token,
       userId: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
+      permissions,
     };
   }
 
@@ -162,11 +171,17 @@ export class AuthService {
       throw new UnauthorizedException('Usuario no encontrado o inactivo');
     }
 
+    const permissions = await this.permissionsService.getEffectivePermissions(
+      user.id,
+      user.role as RoleEnum,
+    );
+
     return {
       userId: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
+      permissions,
     };
   }
 }

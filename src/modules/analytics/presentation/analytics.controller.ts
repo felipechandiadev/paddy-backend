@@ -446,4 +446,41 @@ export class AnalyticsController {
 
     return this.analyticsService.getIvaTaxReport(seasonId, month);
   }
+
+  // ===== PRECIO POR TIPO DE ARROZ =====
+  @Get('rice-price')
+  async getRicePriceReport(
+    @Query('fechaInicio') fechaInicio?: string,
+    @Query('fechaFin') fechaFin?: string,
+    @Query('riceTypeId') riceTypeIdRaw?: string,
+    @Query('groupBy') groupByRaw?: string,
+  ) {
+    if (!fechaInicio?.trim()) {
+      throw new BadRequestException('fechaInicio es obligatorio (YYYY-MM-DD)');
+    }
+
+    if (!fechaFin?.trim()) {
+      throw new BadRequestException('fechaFin es obligatorio (YYYY-MM-DD)');
+    }
+
+    const riceTypeId = this.parseOptionalPositiveInt(riceTypeIdRaw, 'riceTypeId');
+
+    const normalizedGroupBy = (groupByRaw ?? 'month').toLowerCase();
+    const allowedGroupBy = ['day', 'week', 'month'];
+
+    if (!allowedGroupBy.includes(normalizedGroupBy)) {
+      throw new BadRequestException('groupBy debe ser day, week o month');
+    }
+
+    this.logger.log(
+      `[GET] /analytics/rice-price - fechaInicio: ${fechaInicio}, fechaFin: ${fechaFin}, riceTypeId: ${riceTypeId ?? 'ALL'}, groupBy: ${normalizedGroupBy}`,
+    );
+
+    return this.analyticsService.getRicePriceReport({
+      fechaInicio,
+      fechaFin,
+      riceTypeId,
+      groupBy: normalizedGroupBy as 'day' | 'week' | 'month',
+    });
+  }
 }

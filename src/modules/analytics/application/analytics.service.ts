@@ -65,6 +65,13 @@ interface ProcessYieldReportFilters {
   groupBy?: DryingGroupBy;
 }
 
+interface RicePriceReportFilters {
+  fechaInicio: string;
+  fechaFin: string;
+  riceTypeId?: number;
+  groupBy?: DryingGroupBy;
+}
+
 interface CompletedSettlementDataset {
   season: Season;
   settlementsMap: Map<number, Settlement>;
@@ -422,6 +429,35 @@ export class AnalyticsService {
     }
 
     return monthKeys;
+  }
+
+  private buildWeekKeysFromRange(start: Date, endExclusive: Date): string[] {
+    const weekKeys: string[] = [];
+    const cursor = new Date(start);
+    const endDate = new Date(endExclusive);
+    endDate.setDate(endDate.getDate() - 1);
+
+    while (cursor <= endDate) {
+      weekKeys.push(this.toIsoWeekKey(cursor));
+      cursor.setDate(cursor.getDate() + 7);
+    }
+
+    // Remove duplicates and sort
+    return Array.from(new Set(weekKeys)).sort();
+  }
+
+  private buildDayKeysFromRange(start: Date, endExclusive: Date): string[] {
+    const dayKeys: string[] = [];
+    const cursor = new Date(start);
+    const endDate = new Date(endExclusive);
+    endDate.setDate(endDate.getDate() - 1);
+
+    while (cursor <= endDate) {
+      dayKeys.push(this.toDateKey(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return dayKeys;
   }
 
   private calculateProcessLossBreakdown(
@@ -3944,6 +3980,168 @@ export class AnalyticsService {
         ivaCreditSource: 'Settlement.ivaRice',
         ivaDebitServicesSource: 'Settlement.ivaServices',
         ivaDebitInterestsFormula: 'Settlement.totalInterest * 0.19',
+      },
+    };
+  }
+
+  // ===== PRECIO POR TIPO DE ARROZ =====
+  async getRicePriceReport(filters: RicePriceReportFilters) {
+    const { start, endExclusive } = this.parseDateRange(
+      filters.fechaInicio,
+      filters.fechaFin,
+    );
+    const groupBy: DryingGroupBy = filters.groupBy ?? 'month';
+
+    const query = this.receptionsRepository
+      .createQueryBuilder('reception')
+      .leftJoinAndSelect('reception.riceType', 'riceType')
+      .where('reception.deletedAt IS NULL')
+      .andWhere('reception.status = :status', {
+        status: ReceptionStatusEnum.SETTLED,
+      })
+      .andWhere('reception.receptionDate >= :start', {
+        start: this.toDateKey(start),
+      })
+      .andWhere('reception.receptionDate < :end', {
+        end: this.toDateKey(endExclusive),
+      });
+
+    if (filters.riceTypeId) {
+      query.andWhere('reception.riceTypeId = :riceTypeId', {
+        riceTypeId: filters.riceTypeId,
+      });
+    }
+
+    const receptions = await query.getMany();
+
+    // Map: riceTypeId → Map<periodKey, bucket>
+    const riceTypeSeriesMap = new Map<
+      number,
+      {
+        riceTypeId: number;
+        riceTypeCode: string;
+        riceTypeName: string;
+        periodBuckets: Map<
+          string,
+          {
+            totalWeightedPrice: number;
+            totalKg: number;
+            receptionCount: number;
+          }
+        >;
+      }
+    >();
+
+    let totalReceptions = 0;
+    let totalKg = 0;
+    const allPeriodKeys = new Set<string>();
+
+    for (const reception of receptions) {
+      if (!reception.riceType) {
+        continue;
+      }
+
+      const receptionDate = this.parseDateInput(reception.receptionDate);
+      if (!receptionDate) {
+        continue;
+      }
+
+      const paddyKg = this.round2(
+        this.toNumber(reception.finalNetWeight ?? reception.netWeight),
+      );
+      const price = this.round2(this.toNumber(reception.ricePrice));
+
+      if (paddyKg <= 0 || price <= 0) {
+        continue;
+      }
+
+      const periodKey = this.getDryingPeriodKey(receptionDate, groupBy);
+      allPeriodKeys.add(periodKey);
+
+      const riceTypeId = reception.riceType.id;
+
+      if (!riceTypeSeriesMap.has(riceTypeId)) {
+        riceTypeSeriesMap.set(riceTypeId, {
+          riceTypeId,
+          riceTypeCode: reception.riceType.code,
+          riceTypeName: reception.riceType.name,
+          periodBuckets: new Map(),
+        });
+      }
+
+      const series = riceTypeSeriesMap.get(riceTypeId)!;
+
+      if (!series.periodBuckets.has(periodKey)) {
+        series.periodBuckets.set(periodKey, {
+          totalWeightedPrice: 0,
+          totalKg: 0,
+          receptionCount: 0,
+        });
+      }
+
+      const bucket = series.periodBuckets.get(periodKey)!;
+      bucket.totalWeightedPrice += paddyKg * price;
+      bucket.totalKg += paddyKg;
+      bucket.receptionCount += 1;
+
+      totalReceptions += 1;
+      totalKg += paddyKg;
+    }
+
+    const sortedPeriodKeys = groupBy === 'month'
+      ? this.buildMonthKeysFromRange(start, endExclusive)
+      : groupBy === 'week'
+      ? this.buildWeekKeysFromRange(start, endExclusive)
+      : this.buildDayKeysFromRange(start, endExclusive);
+
+    const series = Array.from(riceTypeSeriesMap.values())
+      .sort((a, b) => a.riceTypeName.localeCompare(b.riceTypeName))
+      .map((rt) => ({
+        riceTypeId: rt.riceTypeId,
+        riceTypeCode: rt.riceTypeCode,
+        riceTypeName: rt.riceTypeName,
+        data: sortedPeriodKeys.map((periodKey) => {
+          const bucket = rt.periodBuckets.get(periodKey);
+
+          if (!bucket || bucket.totalKg <= 0) {
+            return {
+              periodKey,
+              weightedAvgPrice: null,
+              totalKg: 0,
+              receptionCount: 0,
+            };
+          }
+
+          return {
+            periodKey,
+            weightedAvgPrice: this.round2(
+              bucket.totalWeightedPrice / bucket.totalKg,
+            ),
+            totalKg: this.round2(bucket.totalKg),
+            receptionCount: bucket.receptionCount,
+          };
+        }),
+      }));
+
+    return {
+      reportName: 'Informe de Evolución de Precios por Tipo de Arroz',
+      period: {
+        fechaInicio: filters.fechaInicio,
+        fechaFin: filters.fechaFin,
+        groupBy,
+        riceTypeId: filters.riceTypeId ?? null,
+      },
+      summary: {
+        totalReceptions,
+        totalKg: this.round2(totalKg),
+        riceTypesCount: riceTypeSeriesMap.size,
+        periodLabels: sortedPeriodKeys,
+      },
+      series,
+      assumptions: {
+        universe: 'recepciones liquidadas (status = SETTLED)',
+        fechaCorte: 'fecha de recepción del camión (receptionDate)',
+        formula: 'precio_ponderado = SUM(finalNetWeight * ricePrice) / SUM(finalNetWeight)',
       },
     };
   }

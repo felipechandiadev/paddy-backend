@@ -74,6 +74,13 @@ export class OperationsController {
     );
   }
 
+    @Get('receptions/last')
+    @Roles(RoleEnum.ADMIN)
+    async getLastReception() {
+      this.logger.log('Fetching last reception');
+      return this.operationsService.getLastReception();
+    }
+
   @Get('receptions/export/excel')
   @Roles(RoleEnum.ADMIN)
   async exportReceptionsExcel(

@@ -3,6 +3,8 @@ import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
 import { TransformInterceptor } from './shared/interceptors/transform.interceptor';
+import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
+import { AuditService } from './modules/audit/application/audit.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -30,7 +32,9 @@ async function bootstrap() {
   // Filtros globales
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Interceptores globales
+  // Interceptores globales - Orden importa: Audit primero, Transform después
+  const auditService = app.get(AuditService);
+  app.useGlobalInterceptors(new AuditInterceptor(auditService));
   app.useGlobalInterceptors(new TransformInterceptor());
 
   const port = process.env.PORT || 3000;

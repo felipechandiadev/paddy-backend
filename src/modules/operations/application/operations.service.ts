@@ -22,6 +22,15 @@ export class OperationsService {
     private configService: ConfigurationService,
   ) {}
 
+    async getLastReception(): Promise<Reception | null> {
+      const lastReception = await this.receptionsRepository.findOne({
+        where: { deletedAt: IsNull() },
+        relations: ['producer', 'season', 'riceType', 'template'],
+        order: { createdAt: 'DESC' },
+      });
+      return lastReception || null;
+    }
+
   private roundTo2(value: number): number {
     return Math.round(value * 100) / 100;
   }
