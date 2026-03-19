@@ -20,13 +20,13 @@ const databaseSslConfig = isDatabaseSslEnabled
     }
   : {};
 
-type GranosPeladosRange = {
+type GranosYesososRange = {
   start: number;
   end: number;
   percent: number;
 };
 
-const GRANOS_PELADOS_RANGES: GranosPeladosRange[] = [
+const GRANOS_YESOSOS_RANGES: GranosYesososRange[] = [
   { start: 0.0, end: 1.0, percent: 0.0 },
   { start: 1.01, end: 2.0, percent: 1.0 },
   { start: 2.01, end: 3.0, percent: 2.0 },
@@ -40,7 +40,7 @@ const GRANOS_PELADOS_RANGES: GranosPeladosRange[] = [
   { start: 10.01, end: 100.0, percent: 100.0 },
 ];
 
-async function backfillGranosPeladosAnalysisRanges() {
+async function backfillGranosYesososAnalysisRanges() {
   const dataSource = new DataSource({
     type: 'mysql',
     host: process.env.DATABASE_HOST || 'localhost',
@@ -58,12 +58,12 @@ async function backfillGranosPeladosAnalysisRanges() {
     const repository = dataSource.getRepository(AnalysisParam);
 
     await dataSource.transaction(async (manager) => {
-      await manager.delete(AnalysisParam, { discountCode: 7 });
+      await manager.delete(AnalysisParam, { discountCode: 8 });
 
-      const newRows = GRANOS_PELADOS_RANGES.map((range, index) =>
+      const newRows = GRANOS_YESOSOS_RANGES.map((range, index) =>
         manager.create(AnalysisParam, {
-          discountCode: 7,
-          discountName: 'Granos Pelados',
+          discountCode: 8,
+          discountName: 'Granos Yesosos',
           unit: '%',
           rangeStart: range.start,
           rangeEnd: range.end,
@@ -77,12 +77,12 @@ async function backfillGranosPeladosAnalysisRanges() {
     });
 
     const savedRows = await repository.find({
-      where: { discountCode: 7 },
+      where: { discountCode: 8 },
       order: { rangeStart: 'ASC' },
     });
 
     console.log(
-      `✅ GRANOS PELADOS actualizado (discountCode 7). Rangos guardados: ${savedRows.length}`,
+      `✅ GRANOS YESOSOS actualizado (discountCode 8). Rangos guardados: ${savedRows.length}`,
     );
     console.table(
       savedRows.map((row) => ({
@@ -92,11 +92,11 @@ async function backfillGranosPeladosAnalysisRanges() {
       })),
     );
   } catch (error) {
-    console.error('❌ Error actualizando rangos de GRANOS PELADOS:', error);
+    console.error('❌ Error actualizando rangos de GRANOS YESOSOS:', error);
     process.exitCode = 1;
   } finally {
     await dataSource.destroy();
   }
 }
 
-void backfillGranosPeladosAnalysisRanges();
+void backfillGranosYesososAnalysisRanges();
