@@ -7,8 +7,7 @@ import { AuditService } from '../application/audit.service';
 import { AuditQueryDto, AuditResponseDto, AuditEventResponseDto } from '../application/dto/audit-query.dto';
 
 @Controller('audit')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(RoleEnum.ADMIN)
+@UseGuards(JwtAuthGuard)
 export class AuditController {
   constructor(private auditService: AuditService) {}
 
@@ -171,6 +170,7 @@ export class AuditController {
     return {
       id: event.id,
       eventCode: event.eventCode,
+      description: event.description ?? event.eventCode,
       category: event.category,
       action: event.action,
       status: event.status,

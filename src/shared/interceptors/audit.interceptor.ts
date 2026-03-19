@@ -25,6 +25,45 @@ interface AuditContext {
 }
 
 /**
+ * Event codes that are too noisy to track on success (read-only / auto-triggered).
+ * Failures and denials are ALWAYS logged regardless of this set.
+ */
+// Eventos que se omiten SIEMPRE (éxito y error) — rutas de sistema sin valor de auditoría
+const SKIP_ALL_EVENT_CODES = new Set([
+  'SYSTEM.GET',
+]);
+
+const SKIP_SUCCESS_EVENT_CODES = new Set([
+  // Read-only list/item views
+  'USERS.LIST.READ',
+  'USERS.ITEM.READ',
+  'USERS.PERMISSIONS.READ',
+  'PRODUCERS.LIST.READ',
+  'PRODUCERS.ITEM.READ',
+  'OPS.RECEPTIONS.LIST.READ',
+  'OPS.ANALYSIS.READ',
+  'FINANCE.ADVANCES.LIST.READ',
+  'FINANCE.TRANSACTIONS.LIST.READ',
+  'FINANCE.SETTLEMENTS.LIST.READ',
+  'FINANCE.SETTLEMENTS.CANDIDATES.READ',
+  'FINANCE.PRODUCERS.PENDING_BALANCE.READ',
+  // Configuration reads
+  'CONFIG.RICE_TYPES.READ',
+  'CONFIG.SEASONS.READ',
+  'CONFIG.TEMPLATES.READ',
+  'CONFIG.ANALYSIS_PARAMS.READ',
+  'CONFIG.READ',
+  // Analytics reads
+  'ANALYTICS.READ',
+  // Auto-triggered / high-frequency events
+  'AUTH.REFRESH.ATTEMPT',
+  'FINANCE.ADVANCES.INTEREST.CALCULATE',
+  'OPS.RECEPTIONS.CALCULATE_DISCOUNTS',
+  // Unmatched GET fallback (también en SKIP_ALL_EVENT_CODES)
+  'SYSTEM.GET',
+]);
+
+/**
  * Audit Interceptor - Logs all HTTP requests/responses
  * Captures: user, action, resource, result, timestamp
  */
@@ -48,6 +87,9 @@ export class AuditInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap(() => {
+        // Skip noisy read-only / auto-triggered events on success
+        if (SKIP_SUCCESS_EVENT_CODES.has(eventInfo.eventCode)) return;
+
         // Log SUCCESS
         this.auditService.logEvent({
           ...eventInfo,
@@ -67,6 +109,9 @@ export class AuditInterceptor implements NestInterceptor {
         });
       }),
       catchError((error) => {
+        // Ignorar completamente eventos de sistema sin valor de auditoría
+        if (SKIP_ALL_EVENT_CODES.has(eventInfo.eventCode)) return throwError(() => error);
+
         // Log FAIL or DENIED based on status
         const status =
           error?.status === 403 || error?.status === 401

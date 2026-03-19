@@ -50,13 +50,14 @@ export class AuditQueryDto {
   @IsInt()
   @Type(() => Number)
   @Min(1)
-  @Max(100)
-  limit?: number = 20;
+  @Max(1000)
+  limit?: number = 200;
 }
 
 export class AuditEventResponseDto {
   id: number;
   eventCode: string;
+  description: string;
   category: string;
   action: string;
   status: string;

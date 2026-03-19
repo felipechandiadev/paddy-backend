@@ -43,7 +43,6 @@ export class FinancesController {
 
   // ===== ADVANCES =====
   @Get('advances')
-  @Roles(RoleEnum.ADMIN)
   async getAllAdvances(
     @Query('producerId') producerId?: number,
     @Query('includeDeleted') includeDeleted?: string,
@@ -74,7 +73,6 @@ export class FinancesController {
   }
 
   @Get('advances/export/excel')
-  @Roles(RoleEnum.ADMIN)
   async exportAdvancesExcel(
     @Res() response: Response,
     @Query('producerId') producerId?: number,
@@ -111,14 +109,12 @@ export class FinancesController {
   }
 
   @Get('advances/:id')
-  @Roles(RoleEnum.ADMIN)
   async getAdvanceById(@Param('id') id: number) {
     this.logger.log(`Fetching advance: ${id}`);
     return this.financesService.getAdvanceById(id);
   }
 
   @Get('advances/:id/details')
-  @Roles(RoleEnum.ADMIN)
   async getAdvanceDetails(@Param('id') id: number) {
     this.logger.log(`Fetching advance details: ${id}`);
     return this.financesService.getAdvanceDetails(id);
@@ -165,7 +161,6 @@ export class FinancesController {
 
   // ===== TRANSACTIONS =====
   @Get('transactions')
-  @Roles(RoleEnum.ADMIN)
   async getAllTransactions(
     @Query('producerId') producerId?: number,
     @Query('type') type?: TransactionTypeEnum,
@@ -175,14 +170,12 @@ export class FinancesController {
   }
 
   @Get('transactions/:id')
-  @Roles(RoleEnum.ADMIN)
   async getTransactionById(@Param('id') id: number) {
     this.logger.log(`Fetching transaction: ${id}`);
     return this.financesService.getTransactionById(id);
   }
 
   @Get('producers/:producerId/pending-balance')
-  @Roles(RoleEnum.ADMIN)
   async getProducerPendingBalance(@Param('producerId') producerId: number) {
     this.logger.log(`Calculating pending balance for producer: ${producerId}`);
     return this.financesService.getProducerPendingBalance(producerId);
@@ -216,7 +209,6 @@ export class FinancesController {
 
   // ===== SETTLEMENTS =====
   @Get('settlements')
-  @Roles(RoleEnum.ADMIN)
   async getAllSettlements(
     @Query('producerId') producerId?: string,
     @Query('status') status?: SettlementStatusEnum,
@@ -246,14 +238,12 @@ export class FinancesController {
   }
 
   @Get('settlements/candidates')
-  @Roles(RoleEnum.ADMIN)
   async getSettlementReceptionCandidates(@Query('producerId') producerId: number) {
     this.logger.log(`Fetching settlement candidates for producer: ${producerId}`);
     return this.financesService.getSettlementReceptionCandidates(producerId);
   }
 
   @Get('settlements/:id')
-  @Roles(RoleEnum.ADMIN)
   async getSettlementById(@Param('id') id: number) {
     this.logger.log(`Fetching settlement: ${id}`);
     return this.financesService.getSettlementById(id);
@@ -313,7 +303,6 @@ export class FinancesController {
   }
 
   @Get('advances/:id/interest')
-  @Roles(RoleEnum.ADMIN)
   async calculateInterest(@Param('id') id: number) {
     this.logger.log(`Calculating interest for advance: ${id}`);
     const advance = await this.financesService.getAdvanceById(id);

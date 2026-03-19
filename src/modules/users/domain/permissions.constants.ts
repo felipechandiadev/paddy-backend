@@ -8,6 +8,13 @@ export const ALWAYS_GRANTED_PERMISSIONS: PermissionEnum[] = [
   PermissionEnum.ANALYSIS_RECORDS_VIEW,
   PermissionEnum.ANALYSIS_RECORDS_CREATE,
   PermissionEnum.ANALYSIS_RECORDS_UPDATE,
+
+  // Servicios de liquidación: siempre habilitados para todos los usuarios.
+  // No aparecen en el editor de permisos del frontend.
+  PermissionEnum.SETTLEMENT_SERVICES_VIEW,
+  PermissionEnum.SETTLEMENT_SERVICES_CREATE,
+  PermissionEnum.SETTLEMENT_SERVICES_UPDATE,
+  PermissionEnum.SETTLEMENT_SERVICES_DELETE,
 ];
 
 /**
@@ -61,9 +68,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleEnum, PermissionEnum[]> = {
     PermissionEnum.SETTLEMENTS_VIEW,
     PermissionEnum.SETTLEMENTS_CREATE,
     PermissionEnum.SETTLEMENTS_SAVE,
-
-    // Servicios de liquidación: solo ver
-    PermissionEnum.SETTLEMENT_SERVICES_VIEW,
 
     // Analíticas: ver reportes
     PermissionEnum.ANALYTICS_VIEW,

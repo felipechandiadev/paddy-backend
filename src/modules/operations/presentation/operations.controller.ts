@@ -45,7 +45,6 @@ export class OperationsController {
 
   // ===== RECEPTIONS =====
   @Get('receptions')
-  @Roles(RoleEnum.ADMIN)
   async getAllReceptions(
     @Query('status') status?: ReceptionStatusEnum,
     @Query('includeDeleted') includeDeleted?: string,
@@ -75,14 +74,12 @@ export class OperationsController {
   }
 
     @Get('receptions/last')
-    @Roles(RoleEnum.ADMIN)
     async getLastReception() {
       this.logger.log('Fetching last reception');
       return this.operationsService.getLastReception();
     }
 
   @Get('receptions/export/excel')
-  @Roles(RoleEnum.ADMIN)
   async exportReceptionsExcel(
     @Res() response: Response,
     @Query('status') status?: ReceptionStatusEnum,
@@ -119,14 +116,12 @@ export class OperationsController {
   }
 
   @Get('receptions/:id')
-  @Roles(RoleEnum.ADMIN)
   async getReceptionById(@Param('id') id: number) {
     this.logger.log(`Fetching reception: ${id}`);
     return this.operationsService.getReceptionById(id);
   }
 
   @Get('producers/:producerId/receptions')
-  @Roles(RoleEnum.ADMIN)
   async getReceptionsByProducer(
     @Param('producerId') producerId: number,
     @Query('status') status?: ReceptionStatusEnum,
@@ -196,7 +191,6 @@ export class OperationsController {
 
   // ===== ANALYSIS RECORDS =====
   @Get('receptions/:receptionId/analysis')
-  @Roles(RoleEnum.ADMIN)
   async getAnalysisRecord(@Param('receptionId') receptionId: number) {
     this.logger.log(`Fetching analysis for reception: ${receptionId}`);
     return this.operationsService.getAnalysisRecord(receptionId);

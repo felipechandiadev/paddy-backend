@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditEvent, AuditStatus, AuditCategory, AuditAction, AuditSeverity } from '../domain/audit-event.entity';
+import { getEventDescription } from '../domain/event-descriptions';
 
 export interface AuditLogInput {
   eventCode: string;
@@ -199,7 +200,13 @@ export class AuditService {
       .take(limit)
       .getMany();
 
-    return { events, total };
+    // Enrich events with human-readable description
+    const enrichedEvents = events.map((event) => ({
+      ...event,
+      description: getEventDescription(event.eventCode),
+    }));
+
+    return { events: enrichedEvents, total };
   }
 
   /**

@@ -26,7 +26,6 @@ import { RoleEnum } from '@shared/enums';
  */
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(RoleEnum.ADMIN)
 export class UsersController {
   private logger = new Logger('UsersController');
 
@@ -48,6 +47,7 @@ export class UsersController {
   }
 
   @Post()
+  @Roles(RoleEnum.ADMIN)
   async createUser(
     @Body() createDto: { email: string; password: string; role: string; name: string },
   ) {
@@ -67,6 +67,7 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @Roles(RoleEnum.ADMIN)
   async updateUser(
     @Param('id') id: number,
     @Body() updateDto: any,
@@ -76,12 +77,14 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @Roles(RoleEnum.ADMIN)
   async deleteUser(@Param('id') id: number) {
     this.logger.log(`Deleting user: ${id}`);
     return this.usersService.deleteUser(id);
   }
 
   @Put(':id/toggle-active')
+  @Roles(RoleEnum.ADMIN)
   async toggleUserActive(@Param('id') id: number) {
     this.logger.log(`Toggling active status for user: ${id}`);
     return this.usersService.toggleUserActive(id);
@@ -118,6 +121,7 @@ export class UsersController {
    * PUT /users/:id/permissions
    */
   @Put(':id/permissions')
+  @Roles(RoleEnum.ADMIN)
   async setUserPermissions(
     @Param('id') id: number,
     @Body() body: { grants: string[]; revokes: string[] },

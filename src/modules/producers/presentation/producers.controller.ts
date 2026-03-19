@@ -32,14 +32,12 @@ export class ProducersController {
   constructor(private producersService: ProducersService) {}
 
   @Get()
-  @Roles(RoleEnum.ADMIN)
   async getAllProducers() {
     this.logger.log('Fetching all producers');
     return this.producersService.getAllProducers();
   }
 
   @Get(':id')
-  @Roles(RoleEnum.ADMIN)
   async getProducerById(@Param('id') id: number) {
     this.logger.log(`Fetching producer: ${id}`);
     return this.producersService.getProducerById(id);

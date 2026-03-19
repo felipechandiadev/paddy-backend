@@ -40,14 +40,12 @@ export class ConfigurationController {
 
   // ===== RICE TYPES =====
   @Get('rice-types')
-  @Roles(RoleEnum.ADMIN)
   async getAllRiceTypes() {
     this.logger.log('Fetching all rice types');
     return this.configService.getAllRiceTypes();
   }
 
   @Get('rice-types/:id')
-  @Roles(RoleEnum.ADMIN)
   async getRiceTypeById(@Param('id') id: number) {
     this.logger.log(`Fetching rice type: ${id}`);
     return this.configService.getRiceTypeById(id);
@@ -76,21 +74,18 @@ export class ConfigurationController {
 
   // ===== SEASONS =====
   @Get('seasons')
-  @Roles(RoleEnum.ADMIN)
   async getAllSeasons(@Query('search') search?: string) {
     this.logger.log(`Fetching all seasons${search ? ` (search: ${search})` : ''}`);
     return this.configService.getAllSeasons(search);
   }
 
   @Get('seasons/active')
-  @Roles(RoleEnum.ADMIN)
   async getActiveSeason() {
     this.logger.log('Fetching active season');
     return this.configService.getActiveSeason();
   }
 
   @Get('seasons/:id')
-  @Roles(RoleEnum.ADMIN)
   async getSeasonById(@Param('id') id: number) {
     this.logger.log(`Fetching season: ${id}`);
     return this.configService.getSeasonById(id);
@@ -119,21 +114,18 @@ export class ConfigurationController {
 
   // ===== TEMPLATES =====
   @Get('templates')
-  @Roles(RoleEnum.ADMIN)
   async getAllTemplates() {
     this.logger.log('Fetching all templates');
     return this.configService.getAllTemplates();
   }
 
   @Get('templates/default')
-  @Roles(RoleEnum.ADMIN)
   async getDefaultTemplate() {
     this.logger.log('Fetching default template');
     return this.configService.getDefaultTemplate();
   }
 
   @Get('templates/:id')
-  @Roles(RoleEnum.ADMIN)
   async getTemplateById(@Param('id') id: number) {
     this.logger.log(`Fetching template: ${id}`);
     return this.configService.getTemplateById(id);
@@ -174,14 +166,12 @@ export class ConfigurationController {
   }
 
   @Get('analysis-params/code/:code')
-  @Roles(RoleEnum.ADMIN)
   async getAnalysisParamsByCode(@Param('code') code: number) {
     this.logger.log(`Fetching analysis params for code: ${code}`);
     return this.configService.getAnalysisParamsByCode(code);
   }
 
   @Get('analysis-params/:code/percent')
-  @Roles(RoleEnum.ADMIN)
   async getPercentByRange(@Param('code') code: string, @Query('range') range: number) {
     this.logger.log(`[getPercentByRange] Request - Code: ${code}, Range: ${range}`);
     
@@ -217,7 +207,6 @@ export class ConfigurationController {
   }
 
   @Get('analysis-params/:id')
-  @Roles(RoleEnum.ADMIN)
   async getAnalysisParamById(@Param('id') id: number) {
     this.logger.log(`Fetching analysis param: ${id}`);
     return this.configService.getAnalysisParamById(id);
@@ -249,7 +238,6 @@ export class ConfigurationController {
 
   // ===== ROLES =====
   @Get('roles')
-  @Roles(RoleEnum.ADMIN)
   async getRoles() {
     this.logger.log('Fetching available roles');
     return this.configService.getRoles();
