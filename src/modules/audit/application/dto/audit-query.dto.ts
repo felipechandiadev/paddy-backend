@@ -72,6 +72,9 @@ export class AuditEventResponseDto {
   ip: string | null;
   requestId: string | null;
   correlationId: string | null;
+  beforeData: Record<string, any> | null;
+  afterData: Record<string, any> | null;
+  metadata: Record<string, any> | null;
   errorMessage: string | null;
   createdAt: Date;
 }

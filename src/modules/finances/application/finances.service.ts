@@ -17,6 +17,8 @@ import {
   ReceptionStatusEnum,
 } from '@shared/enums';
 import { Producer } from '@modules/producers/domain/producer.entity';
+import { AuditService } from '@modules/audit/application/audit.service';
+import { AuditCategory, AuditAction, AuditStatus, AuditSeverity } from '@modules/audit/domain/audit-event.entity';
 import {
   CompleteSettlementDto,
   CreateAdvanceDto,
@@ -92,6 +94,7 @@ export class FinancesService {
     private analysisRecordsRepository: Repository<AnalysisRecord>,
     @InjectRepository(Producer)
     private producersRepository: Repository<Producer>,
+    private auditService: AuditService,
   ) {}
 
   private parseDateOnly(value?: string | null): Date | null {
@@ -1699,7 +1702,18 @@ export class FinancesService {
   }
 
   async updateAdvance(id: number, updateDto: UpdateAdvanceDto, userId?: number) {
-    await this.getAdvanceById(id);
+    // Capturar valores previos
+    const beforeAdvance = await this.getAdvanceById(id);
+    const beforeData = {
+      seasonId: beforeAdvance.seasonId,
+      amount: beforeAdvance.amount,
+      issueDate: beforeAdvance.issueDate,
+      interestRate: beforeAdvance.interestRate,
+      description: beforeAdvance.description,
+      interestEndDate: beforeAdvance.interestEndDate,
+      isInterestCalculationEnabled: beforeAdvance.isInterestCalculationEnabled,
+      status: beforeAdvance.status,
+    };
 
     const normalizedUpdate: Partial<Advance> = {
       seasonId: updateDto.seasonId,
@@ -1726,6 +1740,35 @@ export class FinancesService {
       ) as Partial<Advance>;
 
       await this.advancesRepository.update(id, filteredUpdate);
+
+      // Capturar valores posteriores y loguear auditoría
+      const afterAdvance = await this.getAdvanceById(id);
+      const afterData = {
+        seasonId: afterAdvance.seasonId,
+        amount: afterAdvance.amount,
+        issueDate: afterAdvance.issueDate,
+        interestRate: afterAdvance.interestRate,
+        description: afterAdvance.description,
+        interestEndDate: afterAdvance.interestEndDate,
+        isInterestCalculationEnabled: afterAdvance.isInterestCalculationEnabled,
+        status: afterAdvance.status,
+      };
+
+      // Log evento de auditoría para UPDATE de anticipo
+      this.auditService.logEvent({
+        eventCode: 'FINANCE.ADVANCES.UPDATE',
+        category: AuditCategory.FINANCE,
+        action: AuditAction.UPDATE,
+        status: AuditStatus.SUCCESS,
+        severity: AuditSeverity.WARN,
+        actorUserId: userId || null,
+        entityType: 'Advance',
+        entityId: id,
+        route: '/finances/advances/:id',
+        method: 'PUT',
+        beforeData,
+        afterData,
+      });
 
     const hasPaymentUpdates = this.hasPaymentUpdateFields(updateDto);
     const shouldSyncAmountOrDate =
@@ -1967,10 +2010,48 @@ export class FinancesService {
     return this.transactionsRepository.save(transaction);
   }
 
-  async updateTransaction(id: number, updateDto: Partial<Transaction>) {
-    await this.getTransactionById(id);
+  async updateTransaction(id: number, updateDto: Partial<Transaction>, userId?: number) {
+    // Capturar valores previos
+    const beforeTransaction = await this.getTransactionById(id);
+    const beforeData = {
+      amount: beforeTransaction.amount,
+      type: beforeTransaction.type,
+      transactionDate: beforeTransaction.transactionDate,
+      referenceNumber: beforeTransaction.referenceNumber,
+      notes: beforeTransaction.notes,
+      metadata: beforeTransaction.metadata,
+    };
+
     await this.transactionsRepository.update(id, updateDto);
-    return this.getTransactionById(id);
+
+    // Capturar valores posteriores y loguear auditoría
+    const afterTransaction = await this.getTransactionById(id);
+    const afterData = {
+      amount: afterTransaction.amount,
+      type: afterTransaction.type,
+      transactionDate: afterTransaction.transactionDate,
+      referenceNumber: afterTransaction.referenceNumber,
+      notes: afterTransaction.notes,
+      metadata: afterTransaction.metadata,
+    };
+
+    // Log evento de auditoría para UPDATE de transacción
+    this.auditService.logEvent({
+      eventCode: 'FINANCE.TRANSACTIONS.UPDATE',
+      category: AuditCategory.FINANCE,
+      action: AuditAction.UPDATE,
+      status: AuditStatus.SUCCESS,
+      severity: AuditSeverity.WARN,
+      actorUserId: userId || null,
+      entityType: 'Transaction',
+      entityId: id,
+      route: '/finances/transactions/:id',
+      method: 'PUT',
+      beforeData,
+      afterData,
+    });
+
+    return afterTransaction;
   }
 
   async deleteTransaction(id: number) {
@@ -2767,8 +2848,19 @@ export class FinancesService {
     return this.withSettlementFinancialBreakdown(createdSettlement);
   }
 
-  async updateSettlement(id: number, updateDto: UpdateSettlementDto) {
-    return this.settlementsRepository.manager.transaction(async (manager) => {
+  async updateSettlement(id: number, updateDto: UpdateSettlementDto, userId?: number) {
+    // Capturar valores previos antes de la transacción
+    const beforeSettlement = await this.getSettlementById(id);
+    const beforeData = {
+      status: beforeSettlement.status,
+      receptionIds: beforeSettlement.receptionIds,
+      advanceIds: beforeSettlement.advanceIds,
+      notes: beforeSettlement.notes,
+      calculationDetails: beforeSettlement.calculationDetails,
+      purchaseInvoiceNumber: beforeSettlement.purchaseInvoiceNumber,
+    };
+
+    const result = await this.settlementsRepository.manager.transaction(async (manager) => {
       const settlement = await this.getSettlementForUpdate(manager, id);
 
       if (settlement.status !== SettlementStatusEnum.DRAFT) {
@@ -2853,6 +2945,34 @@ export class FinancesService {
 
       return this.withSettlementFinancialBreakdown(updatedSettlement);
     });
+
+    // Log evento de auditoría para UPDATE de liquidación
+    const afterSettlement = await this.getSettlementById(id);
+    const afterData = {
+      status: afterSettlement.status,
+      receptionIds: afterSettlement.receptionIds,
+      advanceIds: afterSettlement.advanceIds,
+      notes: afterSettlement.notes,
+      calculationDetails: afterSettlement.calculationDetails,
+      purchaseInvoiceNumber: afterSettlement.purchaseInvoiceNumber,
+    };
+
+    this.auditService.logEvent({
+      eventCode: 'FINANCE.SETTLEMENTS.UPDATE',
+      category: AuditCategory.FINANCE,
+      action: AuditAction.UPDATE,
+      status: AuditStatus.SUCCESS,
+      severity: AuditSeverity.WARN,
+      actorUserId: userId || null,
+      entityType: 'Settlement',
+      entityId: id,
+      route: '/finances/settlements/:id',
+      method: 'PUT',
+      beforeData,
+      afterData,
+    });
+
+    return result;
   }
 
   async deleteSettlement(id: number) {

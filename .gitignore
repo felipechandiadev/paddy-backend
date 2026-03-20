@@ -4,6 +4,10 @@ node_modules/
 # Build output
 dist/
 
+# Backups - JSON database exports (local only)
+backups/
+backups/*.json
+
 # Environment variables — never commit secrets
 .env
 .env.*

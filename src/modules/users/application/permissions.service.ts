@@ -7,12 +7,15 @@ import {
   ALWAYS_GRANTED_PERMISSIONS,
   DEFAULT_ROLE_PERMISSIONS,
 } from '../domain/permissions.constants';
+import { AuditService } from '@modules/audit/application/audit.service';
+import { AuditCategory, AuditAction, AuditStatus, AuditSeverity } from '@modules/audit/domain/audit-event.entity';
 
 @Injectable()
 export class PermissionsService {
   constructor(
     @InjectRepository(UserPermissionOverride)
     private overridesRepository: Repository<UserPermissionOverride>,
+    private auditService: AuditService,
   ) {}
 
   /**
@@ -71,6 +74,17 @@ export class PermissionsService {
     revokes: string[],
     assignedByUserId: number,
   ): Promise<void> {
+    // Capturar valores previos
+    const previousOverrides = await this.overridesRepository.find({ where: { userId } });
+    const beforeData = {
+      grants: previousOverrides
+        .filter((o) => o.effect === PermissionOverrideEffectEnum.GRANT)
+        .map((o) => o.permissionKey),
+      revokes: previousOverrides
+        .filter((o) => o.effect === PermissionOverrideEffectEnum.REVOKE)
+        .map((o) => o.permissionKey),
+    };
+
     // Borrar overrides existentes
     await this.overridesRepository.delete({ userId });
 
@@ -106,6 +120,28 @@ export class PermissionsService {
         entities.map((e) => this.overridesRepository.create(e)),
       );
     }
+
+    // Capturar valores posteriores y loguear auditoría
+    const afterData = {
+      grants,
+      revokes,
+    };
+
+    // Log evento de auditoría para UPDATE de permisos
+    this.auditService.logEvent({
+      eventCode: 'USERS.PERMISSIONS.UPDATE',
+      category: AuditCategory.USERS,
+      action: AuditAction.UPDATE,
+      status: AuditStatus.SUCCESS,
+      severity: AuditSeverity.HIGH,
+      actorUserId: assignedByUserId,
+      entityType: 'User',
+      entityId: userId,
+      route: '/users/:id/permissions',
+      method: 'PUT',
+      beforeData,
+      afterData,
+    });
   }
 
   /**

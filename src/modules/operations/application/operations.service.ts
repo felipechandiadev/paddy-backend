@@ -11,6 +11,8 @@ import { ReceptionStatusEnum } from '@shared/enums';
 import { ConfigurationService } from '@modules/configuration/application/configuration.service';
 import { Template } from '@modules/configuration/domain/configuration.entity';
 import { CreateReceptionWithAnalysisDto } from '../dto/operations.dto';
+import { AuditService } from '@modules/audit/application/audit.service';
+import { AuditCategory, AuditAction, AuditStatus, AuditSeverity } from '@modules/audit/domain/audit-event.entity';
 
 @Injectable()
 export class OperationsService {
@@ -20,6 +22,7 @@ export class OperationsService {
     @InjectRepository(AnalysisRecord)
     private analysisRecordsRepository: Repository<AnalysisRecord>,
     private configService: ConfigurationService,
+    private auditService: AuditService,
   ) {}
 
     async getLastReception(): Promise<Reception | null> {
@@ -645,6 +648,23 @@ export class OperationsService {
   async updateReception(id: number, updateDto: Partial<Reception>, userId?: number) {
     const reception = await this.getReceptionById(id);
 
+    // Capturar valores previos
+    const beforeData = {
+      producerId: reception.producerId,
+      seasonId: reception.seasonId,
+      riceTypeId: reception.riceTypeId,
+      guideNumber: reception.guideNumber,
+      grossWeight: reception.grossWeight,
+      tareWeight: reception.tareWeight,
+      netWeight: reception.netWeight,
+      ricePrice: reception.ricePrice,
+      totalDiscountKg: reception.totalDiscountKg,
+      bonusKg: reception.bonusKg,
+      finalNetWeight: reception.finalNetWeight,
+      notes: reception.notes,
+      status: reception.status,
+    };
+
     // No permitir cambiar status aquí (debe hacerse vía endpoints específicos)
     delete updateDto.status;
 
@@ -664,7 +684,42 @@ export class OperationsService {
     Object.assign(reception, updateDto);
     reception.updatedAt = new Date();
 
-    return this.receptionsRepository.save(reception);
+    const updatedReception = await this.receptionsRepository.save(reception);
+
+    // Capturar valores posteriores y loguear auditoría
+    const afterData = {
+      producerId: updatedReception.producerId,
+      seasonId: updatedReception.seasonId,
+      riceTypeId: updatedReception.riceTypeId,
+      guideNumber: updatedReception.guideNumber,
+      grossWeight: updatedReception.grossWeight,
+      tareWeight: updatedReception.tareWeight,
+      netWeight: updatedReception.netWeight,
+      ricePrice: updatedReception.ricePrice,
+      totalDiscountKg: updatedReception.totalDiscountKg,
+      bonusKg: updatedReception.bonusKg,
+      finalNetWeight: updatedReception.finalNetWeight,
+      notes: updatedReception.notes,
+      status: updatedReception.status,
+    };
+
+    // Log evento de auditoría para UPDATE de recepción
+    this.auditService.logEvent({
+      eventCode: 'OPS.RECEPTIONS.UPDATE',
+      category: AuditCategory.OPERATIONS,
+      action: AuditAction.UPDATE,
+      status: AuditStatus.SUCCESS,
+      severity: AuditSeverity.WARN,
+      actorUserId: userId || null,
+      entityType: 'Reception',
+      entityId: id,
+      route: '/operations/receptions/:id',
+      method: 'PUT',
+      beforeData,
+      afterData,
+    });
+
+    return updatedReception;
   }
 
   async updateReceptionRicePrice(
@@ -780,6 +835,13 @@ export class OperationsService {
   ) {
     const analysis = await this.getAnalysisRecord(receptionId);
     const reception = await this.getReceptionById(receptionId);
+
+    // Capturar valores previos
+    const beforeData = JSON.parse(JSON.stringify(analysis));
+    delete beforeData.id;
+    delete beforeData.createdAt;
+    delete beforeData.updatedAt;
+
     const mergedPayload: Partial<AnalysisRecord> = {
       ...analysis,
       ...updateDto,
@@ -807,6 +869,28 @@ export class OperationsService {
         updatedAt: new Date(),
       },
     );
+
+    // Capturar valores posteriores y loguear auditoría
+    const afterData = JSON.parse(JSON.stringify(savedAnalysis));
+    delete afterData.id;
+    delete afterData.createdAt;
+    delete afterData.updatedAt;
+
+    // Log evento de auditoría para UPDATE de análisis
+    this.auditService.logEvent({
+      eventCode: 'OPS.ANALYSIS.UPDATE',
+      category: AuditCategory.OPERATIONS,
+      action: AuditAction.UPDATE,
+      status: AuditStatus.SUCCESS,
+      severity: AuditSeverity.WARN,
+      actorUserId: userId || null,
+      entityType: 'AnalysisRecord',
+      entityId: analysis.id,
+      route: '/operations/receptions/:receptionId/analysis',
+      method: 'PUT',
+      beforeData,
+      afterData,
+    });
 
     return savedAnalysis;
   }

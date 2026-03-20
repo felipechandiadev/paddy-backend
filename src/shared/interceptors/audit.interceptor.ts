@@ -61,6 +61,18 @@ const SKIP_SUCCESS_EVENT_CODES = new Set([
   'OPS.RECEPTIONS.CALCULATE_DISCOUNTS',
   // Unmatched GET fallback (también en SKIP_ALL_EVENT_CODES)
   'SYSTEM.GET',
+  // Service-level audit (with beforeData/afterData) overrides - skip interceptor generic logs
+  'PRODUCERS.UPDATE',
+  'OPS.RECEPTIONS.UPDATE',
+  'OPS.ANALYSIS.UPDATE',
+  'FINANCE.ADVANCES.UPDATE',
+  'FINANCE.TRANSACTIONS.UPDATE',
+  'FINANCE.SETTLEMENTS.UPDATE',
+  'USERS.PERMISSIONS.UPDATE',
+  'CONFIG.RICE_TYPES.UPDATE',
+  'CONFIG.SEASONS.UPDATE',
+  'CONFIG.TEMPLATES.UPDATE',
+  'CONFIG.ANALYSIS_PARAMS.UPDATE',
 ]);
 
 /**
@@ -457,28 +469,68 @@ export class AuditInterceptor implements NestInterceptor {
     // CONFIGURATION routes
     else if (path.includes('/configuration')) {
       if (path.includes('/rice-types')) {
-        eventCode =
-          method === 'GET' ? 'CONFIG.RICE_TYPES.READ' : `CONFIG.RICE_TYPES.${method}`;
+        if (method === 'GET') {
+          eventCode = 'CONFIG.RICE_TYPES.READ';
+          action = AuditAction.READ;
+        } else if (method === 'POST') {
+          eventCode = 'CONFIG.RICE_TYPES.CREATE';
+          action = AuditAction.CREATE;
+        } else if (method === 'PUT' || method === 'PATCH') {
+          eventCode = 'CONFIG.RICE_TYPES.UPDATE';
+          action = AuditAction.UPDATE;
+        } else if (method === 'DELETE') {
+          eventCode = 'CONFIG.RICE_TYPES.DELETE';
+          action = AuditAction.DELETE;
+        }
         category = AuditCategory.CONFIG;
-        action = method === 'GET' ? AuditAction.READ : AuditAction.CREATE;
         severity = method === 'DELETE' ? AuditSeverity.CRITICAL : AuditSeverity.INFO;
       } else if (path.includes('/seasons')) {
-        eventCode =
-          method === 'GET' ? 'CONFIG.SEASONS.READ' : `CONFIG.SEASONS.${method}`;
+        if (method === 'GET') {
+          eventCode = 'CONFIG.SEASONS.READ';
+          action = AuditAction.READ;
+        } else if (method === 'POST') {
+          eventCode = 'CONFIG.SEASONS.CREATE';
+          action = AuditAction.CREATE;
+        } else if (method === 'PUT' || method === 'PATCH') {
+          eventCode = 'CONFIG.SEASONS.UPDATE';
+          action = AuditAction.UPDATE;
+        } else if (method === 'DELETE') {
+          eventCode = 'CONFIG.SEASONS.DELETE';
+          action = AuditAction.DELETE;
+        }
         category = AuditCategory.CONFIG;
-        action = method === 'GET' ? AuditAction.READ : AuditAction.CREATE;
         severity = method === 'DELETE' ? AuditSeverity.CRITICAL : AuditSeverity.INFO;
       } else if (path.includes('/templates')) {
-        eventCode =
-          method === 'GET' ? 'CONFIG.TEMPLATES.READ' : `CONFIG.TEMPLATES.${method}`;
+        if (method === 'GET') {
+          eventCode = 'CONFIG.TEMPLATES.READ';
+          action = AuditAction.READ;
+        } else if (method === 'POST') {
+          eventCode = 'CONFIG.TEMPLATES.CREATE';
+          action = AuditAction.CREATE;
+        } else if (method === 'PUT' || method === 'PATCH') {
+          eventCode = 'CONFIG.TEMPLATES.UPDATE';
+          action = AuditAction.UPDATE;
+        } else if (method === 'DELETE') {
+          eventCode = 'CONFIG.TEMPLATES.DELETE';
+          action = AuditAction.DELETE;
+        }
         category = AuditCategory.CONFIG;
-        action = method === 'GET' ? AuditAction.READ : AuditAction.CREATE;
         severity = method === 'DELETE' ? AuditSeverity.CRITICAL : AuditSeverity.INFO;
       } else if (path.includes('/analysis-params')) {
-        eventCode =
-          method === 'GET' ? 'CONFIG.ANALYSIS_PARAMS.READ' : `CONFIG.ANALYSIS_PARAMS.${method}`;
+        if (method === 'GET') {
+          eventCode = 'CONFIG.ANALYSIS_PARAMS.READ';
+          action = AuditAction.READ;
+        } else if (method === 'POST') {
+          eventCode = 'CONFIG.ANALYSIS_PARAMS.CREATE';
+          action = AuditAction.CREATE;
+        } else if (method === 'PUT' || method === 'PATCH') {
+          eventCode = 'CONFIG.ANALYSIS_PARAMS.UPDATE';
+          action = AuditAction.UPDATE;
+        } else if (method === 'DELETE') {
+          eventCode = 'CONFIG.ANALYSIS_PARAMS.DELETE';
+          action = AuditAction.DELETE;
+        }
         category = AuditCategory.CONFIG;
-        action = method === 'GET' ? AuditAction.READ : AuditAction.CREATE;
         severity = method === 'DELETE' ? AuditSeverity.CRITICAL : AuditSeverity.INFO;
       } else if (path.includes('/roles') || path.includes('/banks')) {
         eventCode = 'CONFIG.READ';

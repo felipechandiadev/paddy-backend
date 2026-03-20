@@ -15,6 +15,7 @@ import { ConfigurationService } from '../application/configuration.service';
 import { JwtAuthGuard } from '@shared/guards/jwt-auth.guard';
 import { RolesGuard } from '@shared/guards/roles.guard';
 import { Roles } from '@shared/decorators/roles.decorator';
+import { GetUser } from '@shared/decorators/get-user.decorator';
 import { RoleEnum } from '@shared/enums';
 import {
   CreateTemplateDto,
@@ -60,9 +61,13 @@ export class ConfigurationController {
 
   @Put('rice-types/:id')
   @Roles(RoleEnum.ADMIN)
-  async updateRiceType(@Param('id') id: number, @Body() updateDto: any) {
+  async updateRiceType(
+    @Param('id') id: number,
+    @Body() updateDto: any,
+    @GetUser('userId') userId: number,
+  ) {
     this.logger.log(`Updating rice type: ${id}`);
-    return this.configService.updateRiceType(id, updateDto);
+    return this.configService.updateRiceType(id, updateDto, userId);
   }
 
   @Delete('rice-types/:id')

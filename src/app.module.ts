@@ -16,6 +16,7 @@ import { FinancesModule } from './modules/finances/finances.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { DatabaseModule } from './infrastructure/database/database.module';
 import { CorrelationIdMiddleware } from './shared/middleware/correlation-id.middleware';
 
 // Importar entidades
@@ -101,6 +102,7 @@ const databaseSslConfig = isDatabaseSslEnabled
     AnalyticsModule,
     HealthModule,
     AuditModule,
+    DatabaseModule,
   ],
   providers: [],
 })

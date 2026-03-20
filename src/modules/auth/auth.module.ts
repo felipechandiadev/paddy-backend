@@ -7,7 +7,8 @@ import { AuthController } from './presentation/auth.controller';
 import { JwtStrategy } from './domain/jwt.strategy';
 import { User } from '@modules/users/domain/user.entity';
 import { UserPermissionOverride } from '@modules/users/domain/user-permission-override.entity';
-import { PermissionsService } from '@modules/users/application/permissions.service';
+import { UsersModule } from '@modules/users/users.module';
+import { AuditModule } from '@modules/audit/audit.module';
 
 @Module({
   imports: [
@@ -19,8 +20,10 @@ import { PermissionsService } from '@modules/users/application/permissions.servi
         expiresIn: process.env.JWT_EXPIRATION || '12h',
       },
     }),
+    UsersModule,
+    AuditModule,
   ],
-  providers: [AuthService, JwtStrategy, PermissionsService],
+  providers: [AuthService, JwtStrategy],
   controllers: [AuthController],
   exports: [AuthService, JwtModule, PassportModule],
 })

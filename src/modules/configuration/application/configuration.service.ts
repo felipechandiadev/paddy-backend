@@ -4,6 +4,8 @@ import { Repository, IsNull, Like } from 'typeorm';
 import { RiceType, Season, Template, AnalysisParam } from '../domain/configuration.entity';
 import { CreateAnalysisParamDto, UpdateAnalysisParamDto } from '../dto/configuration.dto';
 import { BankNameEnum, BankAccountTypeEnum, RoleEnum } from '@shared/enums';
+import { AuditService } from '@modules/audit/application/audit.service';
+import { AuditCategory, AuditAction, AuditStatus, AuditSeverity } from '@modules/audit/domain/audit-event.entity';
 
 @Injectable()
 export class ConfigurationService {
@@ -16,12 +18,13 @@ export class ConfigurationService {
     private templatesRepository: Repository<Template>,
     @InjectRepository(AnalysisParam)
     private analysisParamsRepository: Repository<AnalysisParam>,
+    private auditService: AuditService,
   ) {}
 
   // ===== RICE TYPES =====
   async getAllRiceTypes() {
     return this.riceTypesRepository.find({
-      where: { deletedAt: IsNull(), isActive: true },
+      where: { deletedAt: IsNull() },
       order: { name: 'ASC' },
     });
   }
@@ -48,10 +51,47 @@ export class ConfigurationService {
     );
   }
 
-  async updateRiceType(id: number, updateDto: Partial<RiceType>) {
-    await this.getRiceTypeById(id);
+  async updateRiceType(id: number, updateDto: Partial<RiceType>, userId?: number) {
+    // Capturar valores previos
+    const beforeRiceType = await this.getRiceTypeById(id);
+    const beforeData = {
+      name: beforeRiceType.name,
+      code: beforeRiceType.code,
+      description: beforeRiceType.description,
+      referencePrice: beforeRiceType.referencePrice,
+      isActive: beforeRiceType.isActive,
+    };
+
+    // Actualizar
     await this.riceTypesRepository.update(id, updateDto);
-    return this.getRiceTypeById(id);
+
+    // Capturar valores posteriores y loguear auditoría
+    const afterRiceType = await this.getRiceTypeById(id);
+    const afterData = {
+      name: afterRiceType.name,
+      code: afterRiceType.code,
+      description: afterRiceType.description,
+      referencePrice: afterRiceType.referencePrice,
+      isActive: afterRiceType.isActive,
+    };
+
+    // Log evento de auditoría para UPDATE de tipo de arroz
+    this.auditService.logEvent({
+      eventCode: 'CONFIG.RICE_TYPES.UPDATE',
+      category: AuditCategory.CONFIG,
+      action: AuditAction.UPDATE,
+      status: AuditStatus.SUCCESS,
+      severity: AuditSeverity.WARN,
+      actorUserId: userId || null,
+      entityType: 'RiceType',
+      entityId: id,
+      route: '/configuration/rice-types/:id',
+      method: 'PUT',
+      beforeData,
+      afterData,
+    });
+
+    return afterRiceType;
   }
 
   async deleteRiceType(id: number) {

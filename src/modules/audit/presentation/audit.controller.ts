@@ -185,6 +185,9 @@ export class AuditController {
       ip: event.ip,
       requestId: event.requestId,
       correlationId: event.correlationId,
+      beforeData: event.beforeData,
+      afterData: event.afterData,
+      metadata: event.metadata,
       errorMessage: event.errorMessage,
       createdAt: event.createdAt,
     };

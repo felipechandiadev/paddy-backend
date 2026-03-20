@@ -8,12 +8,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { Producer, BankAccount } from '../domain/producer.entity';
 import { validateAndFormatRut } from '@shared/utils/helpers';
+import { AuditService } from '@modules/audit/application/audit.service';
+import { AuditCategory, AuditAction, AuditStatus, AuditSeverity } from '@modules/audit/domain/audit-event.entity';
 
 @Injectable()
 export class ProducersService {
   constructor(
     @InjectRepository(Producer)
     private producersRepository: Repository<Producer>,
+    private auditService: AuditService,
   ) {}
 
   async createProducer(createProducerDto: Partial<Producer>) {
@@ -48,8 +51,18 @@ export class ProducersService {
     return producer;
   }
 
-  async updateProducer(id: number, updateDto: Partial<Producer>) {
+  async updateProducer(id: number, updateDto: Partial<Producer>, userId?: number) {
+    // Capturar valores previos
     const producer = await this.getProducerById(id);
+    const beforeData = {
+      name: producer.name,
+      rut: producer.rut,
+      email: producer.email,
+      phone: producer.phone,
+      contactPerson: producer.contactPerson,
+      bankAccounts: producer.bankAccounts,
+      isActive: producer.isActive,
+    };
 
     if (updateDto.rut && updateDto.rut !== producer.rut) {
       try {
@@ -60,7 +73,36 @@ export class ProducersService {
     }
 
     Object.assign(producer, updateDto);
-    return this.producersRepository.save(producer);
+    const updatedProducer = await this.producersRepository.save(producer);
+
+    // Capturar valores posteriores y loguear auditoría
+    const afterData = {
+      name: updatedProducer.name,
+      rut: updatedProducer.rut,
+      email: updatedProducer.email,
+      phone: updatedProducer.phone,
+      contactPerson: updatedProducer.contactPerson,
+      bankAccounts: updatedProducer.bankAccounts,
+      isActive: updatedProducer.isActive,
+    };
+
+    // Log evento de auditoría para UPDATE de productor
+    this.auditService.logEvent({
+      eventCode: 'PRODUCERS.UPDATE',
+      category: AuditCategory.PRODUCERS,
+      action: AuditAction.UPDATE,
+      status: AuditStatus.SUCCESS,
+      severity: AuditSeverity.WARN,
+      actorUserId: userId || null,
+      entityType: 'Producer',
+      entityId: id,
+      route: '/producers/:id',
+      method: 'PUT',
+      beforeData,
+      afterData,
+    });
+
+    return updatedProducer;
   }
 
   async addBankAccount(producerId: number, account: BankAccount) {

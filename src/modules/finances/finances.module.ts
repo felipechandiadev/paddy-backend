@@ -10,6 +10,7 @@ import {
 } from './domain/finances.entity';
 import { AnalysisRecord, Reception } from '@modules/operations/domain/operations.entity';
 import { Producer } from '@modules/producers/domain/producer.entity';
+import { AuditModule } from '@modules/audit/audit.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { Producer } from '@modules/producers/domain/producer.entity';
       AnalysisRecord,
       Producer,
     ]),
+    AuditModule,
   ],
   providers: [FinancesService],
   controllers: [FinancesController],

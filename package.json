@@ -29,7 +29,10 @@
     "seed:expanded": "ts-node -r tsconfig-paths/register src/infrastructure/persistence/seeders/seed-expanded.ts",
     "db:reset": "ts-node db-reset.ts",
     "db:setup": "npm run db:reset && npm run build && npm run db:seed",
-    "db:setup:full": "npm run db:reset && npm run build && npm run db:seed:full"
+    "db:setup:full": "npm run db:reset && npm run build && npm run db:seed:full",
+    "seed:test-cosecha": "ts-node -r tsconfig-paths/register src/infrastructure/persistence/seeders/seed-test-cosecha.ts",
+    "db:setup:test-cosecha": "npm run db:reset && npm run build && npm run seed:test-cosecha",
+    "backup:db": "ts-node -r tsconfig-paths/register src/infrastructure/database/cli/backup-cli.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.3",
