@@ -32,6 +32,8 @@
     "db:setup:full": "npm run db:reset && npm run build && npm run db:seed:full",
     "seed:test-cosecha": "ts-node -r tsconfig-paths/register src/infrastructure/persistence/seeders/seed-test-cosecha.ts",
     "db:setup:test-cosecha": "npm run db:reset && npm run build && npm run seed:test-cosecha",
+    "seed:production": "ts-node -r tsconfig-paths/register src/infrastructure/persistence/seeders/seed-production.ts",
+    "db:setup:production": "npm run seed:production",
     "backup:db": "ts-node -r tsconfig-paths/register src/infrastructure/database/cli/backup-cli.ts"
   },
   "dependencies": {
