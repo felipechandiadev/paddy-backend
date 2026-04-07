@@ -21,6 +21,10 @@ import {
   AuditSeverity,
 } from '@modules/audit/domain/audit-event.entity';
 
+// Type para entrada que acepta receptionDate como string o Date
+type CreateReceptionInput = Omit<Partial<Reception>, 'receptionDate'> & { receptionDate?: string | Date | null };
+type UpdateReceptionInput = Omit<Partial<Reception>, 'receptionDate'> & { receptionDate?: string | Date | null };
+
 @Injectable()
 export class OperationsService {
   constructor(
@@ -547,7 +551,7 @@ export class OperationsService {
     });
   }
 
-  async createReception(createDto: Partial<Reception>, userId: number) {
+  async createReception(createDto: CreateReceptionInput, userId: number) {
     // Validar que template existe
     await this.configService.getTemplateById(createDto.templateId);
 
@@ -660,7 +664,7 @@ export class OperationsService {
     });
   }
 
-  async updateReception(id: number, updateDto: Partial<Reception>, userId?: number) {
+  async updateReception(id: number, updateDto: UpdateReceptionInput, userId?: number) {
     const reception = await this.getReceptionById(id);
 
     // Capturar valores previos
