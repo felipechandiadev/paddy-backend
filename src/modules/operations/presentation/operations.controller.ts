@@ -22,6 +22,8 @@ import { Roles } from '@shared/decorators/roles.decorator';
 import { GetUser } from '@shared/decorators/get-user.decorator';
 import { RoleEnum, ReceptionStatusEnum } from '@shared/enums';
 import {
+  CreateReceptionDto,
+  UpdateReceptionDto,
   CreateReceptionWithAnalysisDto,
   CreateAnalysisRecordDto,
   UpdateAnalysisRecordDto,
@@ -147,7 +149,7 @@ export class OperationsController {
   @Post('receptions')
   @Roles(RoleEnum.ADMIN)
   async createReception(
-    @Body() createDto: any,
+    @Body() createDto: CreateReceptionDto,
     @GetUser('userId') userId: number,
   ) {
     this.logger.log(
@@ -160,7 +162,7 @@ export class OperationsController {
   @Roles(RoleEnum.ADMIN)
   async updateReception(
     @Param('id') id: number,
-    @Body() updateDto: any,
+    @Body() updateDto: UpdateReceptionDto,
     @GetUser('userId') userId: number,
   ) {
     this.logger.log(`Updating reception: ${id}`);
