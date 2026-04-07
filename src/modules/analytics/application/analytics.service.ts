@@ -1,6 +1,17 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, Repository } from 'typeorm';
+import { DateTime } from 'luxon';
+import {
+  parseDateInput,
+  formatDateString,
+  getISOWeek,
+  toMonthKey,
+  daysBetween,
+  buildMonthKeysInRange,
+  buildWeekKeysInRange,
+  buildDayKeysInRange,
+} from '@shared/utils/luxon-utils';
 import { Reception } from '@modules/operations/domain/operations.entity';
 import {
   Advance,
@@ -1016,7 +1027,7 @@ export class AnalyticsService {
           continue;
         }
 
-        cutDate = this.parseDateInput(reception.createdAt);
+        cutDate = this.parseDateInput(reception.receptionDate ?? reception.createdAt);
       } else {
         continue;
       }
@@ -1112,7 +1123,7 @@ export class AnalyticsService {
       detail.push({
         receptionId: reception.id,
         cutDate,
-        receptionDate: reception.createdAt,
+        receptionDate: reception.receptionDate ?? reception.createdAt,
         guideNumber: reception.guideNumber,
         producerName: producerBucket.producerName,
         producerRut: producerBucket.producerRut,
@@ -2380,16 +2391,16 @@ export class AnalyticsService {
 
     if (dateRange) {
       receptionsQuery
-        .andWhere('reception.createdAt >= :startDate', {
+        .andWhere('reception.receptionDate >= :startDate', {
           startDate: dateRange.start,
         })
-        .andWhere('reception.createdAt < :endDate', {
+        .andWhere('reception.receptionDate < :endDate', {
           endDate: dateRange.endExclusive,
         });
     }
 
     const receptions = await receptionsQuery
-      .orderBy('reception.createdAt', 'ASC')
+      .orderBy('reception.receptionDate', 'ASC')
       .addOrderBy('reception.id', 'ASC')
       .getMany();
 
@@ -2503,7 +2514,7 @@ export class AnalyticsService {
     let totalHumidityLossKg = 0;
 
     for (const reception of receptions) {
-      const receptionDate = this.parseDateInput(reception.createdAt);
+      const receptionDate = this.parseDateInput(reception.receptionDate ?? reception.createdAt);
       if (!receptionDate) {
         continue;
       }
@@ -3247,7 +3258,7 @@ export class AnalyticsService {
 
         return {
           receptionId: reception.id,
-          receptionDate: reception.createdAt,
+          receptionDate: reception.receptionDate ?? reception.createdAt,
           purchaseDate,
           guideNumber: reception.guideNumber,
           riceTypeName: reception.riceType?.name ?? null,
@@ -3457,7 +3468,7 @@ export class AnalyticsService {
         prodValorBruto += grossValue;
         prodCargoSecado += dryCharge;
 
-        const receptionDate = this.parseDateInput(reception.createdAt);
+        const receptionDate = this.parseDateInput(reception.receptionDate ?? reception.createdAt);
 
         detail.push({
           receptionId: reception.id,

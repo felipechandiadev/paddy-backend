@@ -10,6 +10,10 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import {
+  IsDateStringLuxon,
+  IsOptionalDateStringLuxon,
+} from '@shared/validators/is-date-string-luxon.validator';
 import { ReceptionStatusEnum } from '@shared/enums';
 
 // ===== RECEPTION DTOs =====
@@ -55,6 +59,9 @@ export class CreateReceptionDto {
   @IsOptional()
   @IsBoolean()
   dryFeeApplied?: boolean;
+
+  @IsOptionalDateStringLuxon()
+  receptionDate?: string;
 
   @IsOptional()
   @IsString()
@@ -112,6 +119,10 @@ export class UpdateReceptionDto {
   @IsOptional()
   @IsBoolean()
   dryFeeApplied?: boolean;
+
+  @IsOptional()
+  @IsString()
+  receptionDate?: string;
 
   @IsOptional()
   @IsEnum(ReceptionStatusEnum)

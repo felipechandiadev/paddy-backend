@@ -2,6 +2,13 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, In, EntityManager } from 'typeorm';
 import * as ExcelJS from 'exceljs';
+import { DateTime } from 'luxon';
+import {
+  parseDateInput,
+  formatDateString,
+  daysBetween,
+  toJSDate,
+} from '@shared/utils/luxon-utils';
 import {
   Advance,
   Transaction,
@@ -102,7 +109,8 @@ export class FinancesService {
       return null;
     }
 
-    return new Date(`${value}T00:00:00`);
+    const dt = parseDateInput(value);
+    return dt ? toJSDate(dt) : null;
   }
 
   private formatDateOnly(value?: Date | string | null): string | null {
@@ -110,17 +118,12 @@ export class FinancesService {
       return null;
     }
 
-    const date = value instanceof Date ? value : new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return null;
+    if (value instanceof Date) {
+      const dt = DateTime.fromJSDate(value, { zone: 'utc' });
+      return formatDateString(dt);
     }
 
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(date.getUTCDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
+    return formatDateString(parseDateInput(value));
   }
 
   private parseDateInput(value?: Date | string | null): Date | null {
@@ -128,16 +131,21 @@ export class FinancesService {
       return null;
     }
 
-    if (value instanceof Date) {
-      return Number.isNaN(value.getTime()) ? null : value;
+    const dt = this.parseDateInputLuxon(value);
+    return dt ? toJSDate(dt) : null;
+  }
+
+  private parseDateInputLuxon(value?: Date | string | null): DateTime | null {
+    if (!value) {
+      return null;
     }
 
-    const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value)
-      ? `${value}T00:00:00`
-      : value;
-    const parsed = new Date(normalized);
+    if (value instanceof Date) {
+      const dt = DateTime.fromJSDate(value, { zone: 'utc' });
+      return dt.isValid ? dt : null;
+    }
 
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
+    return parseDateInput(value);
   }
 
   private extractPurchaseInvoiceNumber(
@@ -491,25 +499,28 @@ export class FinancesService {
       return 0;
     }
 
-    const issueDate = this.parseDateInput(advance.issueDate);
-    if (!issueDate) {
+    const issueDt = this.parseDateInputLuxon(advance.issueDate);
+    if (!issueDt || !issueDt.isValid) {
       return 0;
     }
 
-    const configuredEndDate = this.parseDateInput(advance.interestEndDate ?? null);
+    const configuredEndDt = this.parseDateInputLuxon(
+      advance.interestEndDate ?? null,
+    );
+    const referenceDt = DateTime.fromJSDate(referenceDate, { zone: 'utc' });
     const isSettledAdvance = advance.status === AdvanceStatusEnum.SETTLED;
 
-    let effectiveEndDate = referenceDate;
+    let effectiveEndDt = referenceDt;
 
-    if (configuredEndDate) {
-      effectiveEndDate =
-        isSettledAdvance || configuredEndDate < referenceDate
-          ? configuredEndDate
-          : referenceDate;
+    if (configuredEndDt && configuredEndDt.isValid) {
+      effectiveEndDt =
+        isSettledAdvance || configuredEndDt < referenceDt
+          ? configuredEndDt
+          : referenceDt;
     }
 
-    const diffInMs = effectiveEndDate.getTime() - issueDate.getTime();
-    const daysActive = Math.max(0, diffInMs / (1000 * 60 * 60 * 24));
+    // Use Luxon's daysBetween for consistent date math
+    const daysActive = Math.max(0, daysBetween(issueDt, effectiveEndDt));
     const monthsActive = daysActive / 30;
     const amount = Number(advance.amount ?? 0);
     const interestRate = Number(advance.interestRate ?? 0);
@@ -525,26 +536,29 @@ export class FinancesService {
       return 0;
     }
 
-    const issueDate = this.parseDateInput(advance.issueDate);
-    if (!issueDate) {
+    const issueDt = this.parseDateInputLuxon(advance.issueDate);
+    if (!issueDt || !issueDt.isValid) {
       return 0;
     }
 
-    const configuredEndDate = this.parseDateInput(advance.interestEndDate ?? null);
+    const configuredEndDt = this.parseDateInputLuxon(
+      advance.interestEndDate ?? null,
+    );
+    const referenceDt = DateTime.fromJSDate(referenceDate, { zone: 'utc' });
     const isSettledAdvance = advance.status === AdvanceStatusEnum.SETTLED;
 
-    let effectiveEndDate = referenceDate;
+    let effectiveEndDt = referenceDt;
 
-    if (configuredEndDate) {
-      effectiveEndDate =
-        isSettledAdvance || configuredEndDate < referenceDate
-          ? configuredEndDate
-          : referenceDate;
+    if (configuredEndDt && configuredEndDt.isValid) {
+      effectiveEndDt =
+        isSettledAdvance || configuredEndDt < referenceDt
+          ? configuredEndDt
+          : referenceDt;
     }
 
-    const diffInMs = effectiveEndDate.getTime() - issueDate.getTime();
-      // El día de emisión cuenta como día 1
-      return Math.max(1, Math.floor(diffInMs / (1000 * 60 * 60 * 24)) + 1);
+    // Use Luxon's daysBetween for consistent date math
+    // Issue day counts as day 1
+    return Math.max(1, daysBetween(issueDt, effectiveEndDt) + 1);
   }
 
   private normalizeEntityIds(rawIds?: number[]): number[] {

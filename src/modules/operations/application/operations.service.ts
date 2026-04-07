@@ -6,13 +6,20 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, Brackets } from 'typeorm';
 import * as ExcelJS from 'exceljs';
+import { DateTime } from 'luxon';
+import { parseDateInput, formatDateString } from '@shared/utils/luxon-utils';
 import { Reception, AnalysisRecord } from '../domain/operations.entity';
 import { ReceptionStatusEnum } from '@shared/enums';
 import { ConfigurationService } from '@modules/configuration/application/configuration.service';
 import { Template } from '@modules/configuration/domain/configuration.entity';
 import { CreateReceptionWithAnalysisDto } from '../dto/operations.dto';
 import { AuditService } from '@modules/audit/application/audit.service';
-import { AuditCategory, AuditAction, AuditStatus, AuditSeverity } from '@modules/audit/domain/audit-event.entity';
+import {
+  AuditCategory,
+  AuditAction,
+  AuditStatus,
+  AuditSeverity,
+} from '@modules/audit/domain/audit-event.entity';
 
 @Injectable()
 export class OperationsService {
@@ -62,15 +69,21 @@ export class OperationsService {
     }
 
     if (value instanceof Date) {
-      return Number.isNaN(value.getTime()) ? null : value;
+      return value;
     }
 
-    const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value)
-      ? `${value}T00:00:00`
-      : value;
-    const parsed = new Date(normalized);
+    const dt = parseDateInput(value);
+    if (!dt || !dt.isValid) return null;
 
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
+    // For date-only input (YYYY-MM-DD), extract just the date portion
+    // and return it as a local Date to match what was provided
+    // This prevents timezone conversion issues between client and database
+    const year = dt.year;
+    const month = dt.month;
+    const day = dt.day;
+
+    // Create a Date in local timezone to match the provided date string
+    return new Date(year, month - 1, day);
   }
 
   private calculateReceptionTotals(
@@ -587,11 +600,13 @@ export class OperationsService {
       const netWeight =
         createDto.reception.grossWeight - createDto.reception.tareWeight;
 
+      const receptionDate = this.parseDateInput(createDto.reception.receptionDate) ?? new Date();
+
       const reception = receptionsRepo.create({
         ...createDto.reception,
         netWeight,
         status: ReceptionStatusEnum.ANALYZED,
-        receptionDate: new Date(),
+        receptionDate,
         userId,
       });
 

@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import { DateTime } from 'luxon';
 import { AuthService } from '../application/auth.service';
 import { JwtAuthGuard } from '@shared/guards/jwt-auth.guard';
 import { GetUser } from '@shared/decorators/get-user.decorator';
@@ -93,6 +94,6 @@ export class AuthController {
   @Get('health')
   @HttpCode(HttpStatus.OK)
   health() {
-    return { status: 'ok', timestamp: new Date().toISOString() };
+    return { status: 'ok', timestamp: DateTime.now().toISO() };
   }
 }

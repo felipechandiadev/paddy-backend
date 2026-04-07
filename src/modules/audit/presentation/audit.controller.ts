@@ -1,4 +1,5 @@
 import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
+import { DateTime } from 'luxon';
 import { JwtAuthGuard } from '@shared/guards/jwt-auth.guard';
 import { RolesGuard } from '@shared/guards/roles.guard';
 import { Roles } from '@shared/decorators/roles.decorator';
@@ -130,8 +131,10 @@ export class AuditController {
    */
   @Get('summary')
   async getAuditSummary(@Query('days') days: number = 7) {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - Math.min(Math.max(days, 1), 30)); // Clamp between 1-30 days
+    const clampedDays = Math.min(Math.max(days, 1), 30);
+    const startDate = DateTime.now()
+      .minus({ days: clampedDays })
+      .toJSDate();
 
     const { events } = await this.auditService.findEvents({
       startDate,

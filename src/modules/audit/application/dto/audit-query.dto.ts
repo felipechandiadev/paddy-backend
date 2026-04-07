@@ -1,14 +1,22 @@
-import { IsOptional, IsEnum, IsDateString, IsInt, IsString, Min, Max } from 'class-validator';
-import { AuditSeverity, AuditStatus, AuditCategory } from '../../domain/audit-event.entity';
+import { IsOptional, IsEnum, IsInt, IsString, Min, Max } from 'class-validator';
+import {
+  IsDateStringLuxon,
+  IsOptionalDateStringLuxon,
+} from '@shared/validators/is-date-string-luxon.validator';
+import {
+  AuditSeverity,
+  AuditStatus,
+  AuditCategory,
+} from '../../domain/audit-event.entity';
 import { Type } from 'class-transformer';
 
 export class AuditQueryDto {
   @IsOptional()
-  @IsDateString()
+  @IsOptionalDateStringLuxon()
   startDate?: string;
 
   @IsOptional()
-  @IsDateString()
+  @IsOptionalDateStringLuxon()
   endDate?: string;
 
   @IsOptional()

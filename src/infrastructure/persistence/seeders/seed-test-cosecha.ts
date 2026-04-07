@@ -209,22 +209,9 @@ class SeedTestCosecha {
     });
     const saved = await this.dataSource.manager.save(user);
 
-    // Crear permisos override (solo lectura)
-    const permissions = [
-      'users.view', 'producers.view', 'rice_types.view', 'seasons.view',
-      'templates.view', 'analysis_params.view', 'receptions.view',
-      'analysis_records.view', 'advances.view', 'transactions.view',
-      'settlements.view', 'analytics.view',
-    ];
-
-    for (const permission of permissions) {
-      const override = this.dataSource.manager.create(UserPermissionOverride, {
-        userId: saved.id,
-        permissionKey: permission,
-        effect: PermissionOverrideEffectEnum.GRANT,
-      });
-      await this.dataSource.manager.save(override);
-    }
+    // NO crear overrides: el usuario CONSULTANT usará los permisos por defecto
+    // definidos en DEFAULT_ROLE_PERMISSIONS[RoleEnum.CONSULTANT]
+    // Los overrides pueden conflictuar con los defaults
 
     return saved;
   }

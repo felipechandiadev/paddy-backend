@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PermissionEnum, PermissionOverrideEffectEnum, RoleEnum } from '@shared/enums';
+import { User } from '../domain/user.entity';
 import { UserPermissionOverride } from '../domain/user-permission-override.entity';
 import {
   ALWAYS_GRANTED_PERMISSIONS,
@@ -15,18 +16,23 @@ export class PermissionsService {
   constructor(
     @InjectRepository(UserPermissionOverride)
     private overridesRepository: Repository<UserPermissionOverride>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
     private auditService: AuditService,
   ) {}
 
   /**
    * Resuelve el conjunto efectivo de permisos de un usuario:
-   *   defaults del rol  +  GRANTs individuales  -  REVOKEs individuales
+   *   defaults del rol  +  GRANTs individuales  +  permisos siempre otorgados (según rol)  -  REVOKEs individuales
    */
   async getEffectivePermissions(userId: number, role: RoleEnum): Promise<string[]> {
     const defaults = new Set<string>(DEFAULT_ROLE_PERMISSIONS[role] ?? []);
-    const alwaysGranted = new Set<string>(ALWAYS_GRANTED_PERMISSIONS as string[]);
+    
+    // Obtener permisos "siempre otorgados" específicos del rol
+    const alwaysGrantedForRole = ALWAYS_GRANTED_PERMISSIONS[role] ?? [];
+    const alwaysGranted = new Set<string>(alwaysGrantedForRole as string[]);
 
-    // Forzar permisos obligatorios para todos los usuarios.
+    // Agregar permisos obligatorios del rol
     for (const key of alwaysGranted) {
       defaults.add(key);
     }
@@ -48,7 +54,7 @@ export class PermissionsService {
       }
     }
 
-    // Doble garantía ante datos legacy con REVOKE persistidos.
+    // Doble garantía: re-agregar permisos siempre otorgados por el rol
     for (const key of alwaysGranted) {
       defaults.add(key);
     }
@@ -74,6 +80,12 @@ export class PermissionsService {
     revokes: string[],
     assignedByUserId: number,
   ): Promise<void> {
+    // Obtener el usuario para conocer su rol
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new Error(`Usuario no encontrado: ${userId}`);
+    }
+
     // Capturar valores previos
     const previousOverrides = await this.overridesRepository.find({ where: { userId } });
     const beforeData = {
@@ -91,7 +103,10 @@ export class PermissionsService {
     const entities: Partial<UserPermissionOverride>[] = [];
 
     const allPermissions = new Set(Object.values(PermissionEnum) as string[]);
-    const alwaysGranted = new Set<string>(ALWAYS_GRANTED_PERMISSIONS as string[]);
+    
+    // Obtener permisos "siempre otorgados" específicos del rol del usuario
+    const alwaysGrantedForRole = ALWAYS_GRANTED_PERMISSIONS[user.role] ?? [];
+    const alwaysGranted = new Set<string>(alwaysGrantedForRole as string[]);
 
     for (const key of grants) {
       if (allPermissions.has(key) && !alwaysGranted.has(key)) {

@@ -12,6 +12,10 @@ import {
   Min,
 } from 'class-validator';
 import {
+  IsDateStringLuxon,
+  IsOptionalDateStringLuxon,
+} from '@shared/validators/is-date-string-luxon.validator';
+import {
   AdvanceStatusEnum,
   PaymentMethodEnum,
   SettlementStatusEnum,
@@ -33,6 +37,7 @@ export class CreateAdvanceDto {
   amount: number;
 
   @IsString()
+  @IsDateStringLuxon()
   issueDate: string; // YYYY-MM-DD
 
   @IsNumber()
@@ -101,7 +106,7 @@ export class UpdateAdvanceDto {
   interestRate?: number;
 
   @IsOptional()
-  @IsString()
+  @IsOptionalDateStringLuxon()
   description?: string;
 
   @IsOptional()

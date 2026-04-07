@@ -1,11 +1,23 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, Like } from 'typeorm';
+import { DateTime } from 'luxon';
+import {
+  parseDateString,
+  formatDateString,
+  compareDateTime,
+  isValidDate,
+} from '@shared/utils/luxon-utils';
 import { RiceType, Season, Template, AnalysisParam } from '../domain/configuration.entity';
 import { CreateAnalysisParamDto, UpdateAnalysisParamDto } from '../dto/configuration.dto';
 import { BankNameEnum, BankAccountTypeEnum, RoleEnum } from '@shared/enums';
 import { AuditService } from '@modules/audit/application/audit.service';
-import { AuditCategory, AuditAction, AuditStatus, AuditSeverity } from '@modules/audit/domain/audit-event.entity';
+import {
+  AuditCategory,
+  AuditAction,
+  AuditStatus,
+  AuditSeverity,
+} from '@modules/audit/domain/audit-event.entity';
 
 @Injectable()
 export class ConfigurationService {
@@ -687,18 +699,28 @@ export class ConfigurationService {
       throw new BadRequestException(`La fecha de ${field} es obligatoria`);
     }
 
-    const raw = value instanceof Date ? value.toISOString().slice(0, 10) : String(value).slice(0, 10);
-    const isDateLike = /^\d{4}-\d{2}-\d{2}$/.test(raw);
+    const dt = parseDateString(
+      value instanceof Date ? value.toISOString().slice(0, 10) : String(value),
+    );
 
-    if (!isDateLike || Number.isNaN(new Date(`${raw}T00:00:00`).getTime())) {
+    if (!dt || !dt.isValid) {
       throw new BadRequestException(`La fecha de ${field} no es válida`);
     }
 
-    return raw;
+    return formatDateString(dt) as string;
   }
 
   private validateSeasonDateRange(startDate: string, endDate: string) {
-    if (startDate > endDate) {
+    const startDt = parseDateString(startDate);
+    const endDt = parseDateString(endDate);
+
+    if (!startDt || !endDt) {
+      throw new BadRequestException(
+        'Las fechas de inicio y fin deben estar en formato válido YYYY-MM-DD',
+      );
+    }
+
+    if (compareDateTime(startDt, endDt) > 0) {
       throw new BadRequestException(
         'La fecha de inicio no puede ser posterior a la fecha de fin',
       );

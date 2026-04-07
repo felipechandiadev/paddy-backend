@@ -1,4 +1,8 @@
 import { IsString, IsOptional, IsNumber, IsBoolean, IsPositive } from 'class-validator';
+import {
+  IsDateStringLuxon,
+  IsOptionalDateStringLuxon,
+} from '@shared/validators/is-date-string-luxon.validator';
 
 // ===== RICE TYPE DTOs =====
 export class CreateRiceTypeDto {
@@ -50,10 +54,10 @@ export class CreateSeasonDto {
   @IsString()
   name: string;
 
-  @IsString()
+  @IsDateStringLuxon()
   startDate: string; // YYYY-MM-DD
 
-  @IsString()
+  @IsDateStringLuxon()
   endDate: string; // YYYY-MM-DD
 
   @IsOptional()
@@ -66,12 +70,10 @@ export class UpdateSeasonDto {
   @IsString()
   name?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptionalDateStringLuxon()
   startDate?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptionalDateStringLuxon()
   endDate?: string;
 
   @IsOptional()

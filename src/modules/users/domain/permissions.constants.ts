@@ -1,21 +1,23 @@
 import { PermissionEnum, RoleEnum } from '@shared/enums';
 
 /**
- * Permisos obligatorios que siempre deben estar habilitados para todos los usuarios.
- * No deben aparecer en la UI de administración de permisos.
+ * Permisos obligatorios que siempre deben estar habilitados para usuarios ADMIN.
+ * Para CONSULTANT, solo se incluyen los permisos de la lista explícita.
  */
-export const ALWAYS_GRANTED_PERMISSIONS: PermissionEnum[] = [
-  PermissionEnum.ANALYSIS_RECORDS_VIEW,
-  PermissionEnum.ANALYSIS_RECORDS_CREATE,
-  PermissionEnum.ANALYSIS_RECORDS_UPDATE,
-
-  // Servicios de liquidación: siempre habilitados para todos los usuarios.
-  // No aparecen en el editor de permisos del frontend.
-  PermissionEnum.SETTLEMENT_SERVICES_VIEW,
-  PermissionEnum.SETTLEMENT_SERVICES_CREATE,
-  PermissionEnum.SETTLEMENT_SERVICES_UPDATE,
-  PermissionEnum.SETTLEMENT_SERVICES_DELETE,
-];
+export const ALWAYS_GRANTED_PERMISSIONS: Record<RoleEnum, PermissionEnum[]> = {
+  [RoleEnum.ADMIN]: [
+    PermissionEnum.ANALYSIS_RECORDS_VIEW,
+    PermissionEnum.ANALYSIS_RECORDS_CREATE,
+    PermissionEnum.ANALYSIS_RECORDS_UPDATE,
+    // Servicios de liquidación: siempre habilitados para ADMIN
+    PermissionEnum.SETTLEMENT_SERVICES_VIEW,
+    PermissionEnum.SETTLEMENT_SERVICES_CREATE,
+    PermissionEnum.SETTLEMENT_SERVICES_UPDATE,
+    PermissionEnum.SETTLEMENT_SERVICES_DELETE,
+  ],
+  // CONSULTANT: sin permisos "siempre otorgados" - solo los de la lista explícita
+  [RoleEnum.CONSULTANT]: [],
+};
 
 /**
  * Permisos por defecto para cada rol.
@@ -32,11 +34,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleEnum, PermissionEnum[]> = {
     // Usuarios: solo ver
     PermissionEnum.USERS_VIEW,
 
-    // Productores: CRUD completo
+    // Productores: solo ver
     PermissionEnum.PRODUCERS_VIEW,
-    PermissionEnum.PRODUCERS_CREATE,
-    PermissionEnum.PRODUCERS_UPDATE,
-    PermissionEnum.PRODUCERS_DELETE,
 
     // Configuración: solo ver
     PermissionEnum.RICE_TYPES_VIEW,
@@ -44,27 +43,16 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleEnum, PermissionEnum[]> = {
     PermissionEnum.TEMPLATES_VIEW,
     PermissionEnum.ANALYSIS_PARAMS_VIEW,
 
-    // Recepciones: CRUD completo
+    // Recepciones: solo ver
     PermissionEnum.RECEPTIONS_VIEW,
-    PermissionEnum.RECEPTIONS_CREATE,
-    PermissionEnum.RECEPTIONS_UPDATE,
-    PermissionEnum.RECEPTIONS_CANCEL,
 
-    // Análisis: CRUD completo
-    PermissionEnum.ANALYSIS_RECORDS_VIEW,
-    PermissionEnum.ANALYSIS_RECORDS_CREATE,
-    PermissionEnum.ANALYSIS_RECORDS_UPDATE,
-
-    // Anticipos: crear/editar/cancelar, pero NO cambiar tasa de interés
+    // Anticipos: solo ver (sin crear/editar/cancelar ni cambiar tasa)
     PermissionEnum.ADVANCES_VIEW,
-    PermissionEnum.ADVANCES_CREATE,
-    PermissionEnum.ADVANCES_UPDATE,
-    PermissionEnum.ADVANCES_CANCEL,
 
     // Transacciones: solo ver
     PermissionEnum.TRANSACTIONS_VIEW,
 
-    // Liquidaciones: crear y guardar borrador, pero NO completar ni cancelar
+    // Liquidaciones: ver, crear y guardar (sin completar ni cancelar)
     PermissionEnum.SETTLEMENTS_VIEW,
     PermissionEnum.SETTLEMENTS_CREATE,
     PermissionEnum.SETTLEMENTS_SAVE,
