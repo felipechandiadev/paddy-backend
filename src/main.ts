@@ -15,7 +15,6 @@ async function bootstrap() {
     'http://localhost:3000',
     process.env.FRONTEND_URL,
     'https://paddy-frontend-omega.vercel.app',
-    'https://paddy-backend-xez5.onrender.com',
   ].filter(Boolean);
 
   app.enableCors({
